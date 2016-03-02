@@ -86,6 +86,19 @@ class Axis:
 def rshift(val, n):
     return (val % 0x100000000) >> n
 
+
+def signed_short(val):
+    """
+    Convert 16 bits in number form into a signed short
+    Equivalent to
+    :param val: a 16-bit unsigned integer
+    :return: The signed short from - (2**16) to 2**16 - 1
+    """
+    val &= 0xFFFF  # Truncate to 16 bits
+    sig = -1 if val >> 15 == 1 else 1
+    u_short = val & 0x7FFF
+    return sig * u_short
+
 # TODO restructure so that each axis is a PIDSource
 
 
@@ -245,7 +258,7 @@ class ITG3200(PIDSource):
 
     def readShortFromRegister(self, register, count):
         buf = self.readI2C(register, count)
-        return (buf[0] << 8) | buf[1]
+        return signed_short((buf[0] << 8) | buf[1])
 
     def writeBits(self, register, bit, numBits, value):
         rawData = self.readI2C(register, 1)
