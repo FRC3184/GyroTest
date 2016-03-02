@@ -24,7 +24,6 @@
 # ===============================================
 
 import wpilib
-import sys
 from wpilib.interfaces import PIDSource
 from wpilib._impl.timertask import Timer, TimerTask
 
@@ -103,7 +102,7 @@ def signed_short(val):
 
 
 class ITG3200(PIDSource):
-    def __init__(self, port, addr=DEFAULT_ADDR):
+    def __init__(self, port, addr=DEFAULT_ADDR, integrate=True):
         self.i2c = wpilib.I2C(port, addr)
         self.addr = addr
         self.pidAxis = Axis.X
@@ -114,10 +113,17 @@ class ITG3200(PIDSource):
         self.centerY = 0
         self.centerZ = 0
 
-        self.intrTask = TimerTask("ITG3200 Integrate", 0.05, self.update)
-        self.intrTask.start()
+        self.intrTask = None
+        if integrate:
+            self.intrTask = TimerTask("ITG3200 Integrate", 0.05, self.update)
+            self.intrTask.start()
 
         self.enabled = True
+        
+    def free(self):
+        self.i2c.free()
+        if self.intrTask is not None:
+            self.intrTask.cancel()
 
     def readI2C(self, register, count):
         if not self.enabled:
@@ -141,7 +147,7 @@ class ITG3200(PIDSource):
         self.angleY = 0
         self.angleZ = 0
 
-    def calibrate(self, time=10.0, samples=100):
+    def calibrate(self, time=5.0, samples=100):
         """
         Calibrate
 
