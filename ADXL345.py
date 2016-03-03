@@ -53,6 +53,41 @@ class ADXL345:
         self.i2c.write(self.kPowerCtlRegister, self.kPowerCtl_Measure)
 
         self.setRange(accel_range)
+        
+        self.centerX = 0
+        self.centerY = 0
+        self.centerZ = 0
+        
+    def calibrate(self, time=5.0, samples=100):
+        """
+        Calibrate
+
+        Watch out, this will actually pause the robot
+        :param samples: The amount of samples to take
+        :param time: The time to calibrate
+        :return:
+        """
+        gathered = 0
+        calX = 0
+        calY = 0
+        calZ = 0
+
+        print("Starting ADXL345 calibration routine for {} seconds".format(time))
+        while gathered < samples:
+            calX += self.getX()
+            calY += self.getY()
+            calZ += self.getZ()
+
+            gathered += 1
+            Timer.delay(time/samples)
+        print("Done calibrating ADXL345")
+        calX /= samples
+        calY /= samples
+        calZ /= samples
+
+        self.centerX = calX
+        self.centerY = calY
+        self.centerZ = calZ
 
     def free(self):
         self.i2c.free()
@@ -108,9 +143,17 @@ class ADXL345:
         :returns: An object containing the acceleration measured on each axis of the ADXL345 in Gs.
         """
         data = self.i2c.read(self.kDataRegister + axis, 2)
+        center = 0
+        if center is Axes.X:
+            center = self.centerX
+        if center is Axes.Y:
+            center = self.centerY
+        if center is Axes.Z:
+            center = self.centerZ
+        
         # Sensor is little endian... swap bytes
         rawAccel = (data[1] << 8) | data[0]
-        return rawAccel * self.kGsPerLSB
+        return rawAccel * self.kGsPerLSB - center
 
     def getAccelerations(self):
         """Get the acceleration of all axes in Gs.
@@ -125,6 +168,6 @@ class ADXL345:
         for i in range(3):
             rawData.append((data[i*2+1] << 8) | data[i*2])
 
-        return (rawData[0] * self.kGsPerLSB,
-                rawData[1] * self.kGsPerLSB,
-                rawData[2] * self.kGsPerLSB)
+        return (rawData[0] * self.kGsPerLSB - self.centerX,
+                rawData[1] * self.kGsPerLSB - self.centerY,
+                rawData[2] * self.kGsPerLSB - self.centerZ)

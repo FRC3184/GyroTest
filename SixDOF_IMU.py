@@ -1,6 +1,7 @@
 import math
 import wpilib
 import ITG3200
+import threading
 from ADXL345 import ADXL345
 from wpilib._impl.timertask import TimerTask
 
@@ -24,10 +25,22 @@ class SixDOF_IMU:
         self.initGyro()
 
         self.updateTask = TimerTask("6DOF IMU Update", 50/1000, self.update)
+        
+    def calibrate(self, time=5.0, samples=100):
+        gyro_cal = threading.Thread(target=self.gyro.calibrate, 
+                                    name="6DOF IMU Calibrate Gyro", 
+                                    kwargs={"time": time, "samples": samples},
+                                    daemon=True)
+        accel_cal = threading.Thread(target=self.accel.calibrate, 
+                                    name="6DOF IMU Calibrate Accelerometer", 
+                                    kwargs={"time": time, "samples": samples},
+                                    daemon=True)
+        
+        gyro_cal.start()
+        accel_cal.start()
 
     def initGyro(self):
         self.gyro.init()
-        self.gyro.calibrate()
 
     def free(self):
         self.gyro.free()
