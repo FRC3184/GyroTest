@@ -5,7 +5,6 @@ from SixDOF_IMU import SixDOF_IMU
 class MyRobot(wpilib.SampleRobot):
     def robotInit(self):
         self.imu = SixDOF_IMU(wpilib.I2C.Port.kOnboard)
-        self.imu.initGyro()
         self.imu.resetAngle()
 
         self.joystick = wpilib.Joystick(1)
@@ -17,7 +16,6 @@ class MyRobot(wpilib.SampleRobot):
             if self.joystick.getRawButton(1):
                 self.imu.resetAngle()
             dt = 20/1000
-            self.imu.update(dt)
 
             wpilib.SmartDashboard.putNumber("IMU Angle X", self.imu.angleX)
             wpilib.SmartDashboard.putNumber("IMU Angle Y", self.imu.angleY)
