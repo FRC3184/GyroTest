@@ -8,7 +8,7 @@ from wpilib._impl.timertask import TimerTask
 
 class SixDOF_IMU:
     def __init__(self, i2c_port,
-                 accel_factor=0.07,
+                 accel_factor=0.02,
                  itg3200_addr=ITG3200.DEFAULT_ADDR,
                  adxl345_addr=None,
                  adxl345_range=ADXL345.Range.k16G):
@@ -25,6 +25,7 @@ class SixDOF_IMU:
         self.initGyro()
 
         self.updateTask = TimerTask("6DOF IMU Update", 50/1000, self.update)
+        self.updateTask.start()
         
     def calibrate(self, time=5.0, samples=100):
         gyro_cal = threading.Thread(target=self.gyro.calibrate, 
@@ -32,9 +33,9 @@ class SixDOF_IMU:
                                     kwargs={"time": time, "samples": samples},
                                     daemon=True)
         accel_cal = threading.Thread(target=self.accel.calibrate, 
-                                    name="6DOF IMU Calibrate Accelerometer", 
-                                    kwargs={"time": time, "samples": samples},
-                                    daemon=True)
+                                     name="6DOF IMU Calibrate Accelerometer",
+                                     kwargs={"time": time, "samples": samples},
+                                     daemon=True)
         
         gyro_cal.start()
         accel_cal.start()
@@ -52,7 +53,7 @@ class SixDOF_IMU:
             y = self.accel.getY()
             z = self.accel.getZ()
             # Normalize accelerometer output?
-            accel_mag = 1  # (x**2 + y**2 + z**2)**0.5
+            accel_mag = (x**2 + y**2 + z**2)**0.5
             self.accel_x = x/accel_mag
             self.accel_y = y/accel_mag
             self.accel_z = z/accel_mag
@@ -62,18 +63,18 @@ class SixDOF_IMU:
             wpilib.DriverStation.getInstance().reportError("Error reading from ADXL345", False)
 
         # Found by looking at my hand
-        accel_deg_x = math.degrees(math.atan2(self.accel_z, self.accel_y) + math.pi)
-        accel_deg_y = math.degrees(math.atan2(self.accel_z, -self.accel_x) + math.pi)
-        accel_deg_z = math.degrees(math.atan2(self.accel_y, self.accel_x) + math.pi)
+        accel_deg_x = math.degrees(math.atan2(self.accel_z, self.accel_y) + (3/4) * math.pi)
+        accel_deg_y = math.degrees(math.atan2(self.accel_z, -self.accel_x) + math.pi/2)
+        accel_deg_z = math.degrees(math.atan2(self.accel_y, self.accel_x) + math.pi/2)
 
         gyro_deg_x = self.gyro.getRateX()
         gyro_deg_y = self.gyro.getRateY()
         gyro_deg_z = self.gyro.getRateZ()
 
         # Complementary filter
-        self.angleX = (1-self.accel_factor)*(self.angleX + gyro_deg_x * dt) + self.accel_factor * accel_deg_x
-        self.angleY = (1-self.accel_factor)*(self.angleY + gyro_deg_y * dt) + self.accel_factor * accel_deg_y
-        self.angleZ = (1-self.accel_factor)*(self.angleZ + gyro_deg_z * dt) + self.accel_factor * accel_deg_z
+        self.angleX = (1-self.accel_factor)*(self.angleX + gyro_deg_x * dt/1000) + self.accel_factor * accel_deg_x
+        self.angleY = (1-self.accel_factor)*(self.angleY + gyro_deg_y * dt/1000) + self.accel_factor * accel_deg_y
+        self.angleZ = (1-self.accel_factor)*(self.angleZ + gyro_deg_z * dt/1000) + self.accel_factor * accel_deg_z
 
     def getAngleX(self):
         return self.angleX

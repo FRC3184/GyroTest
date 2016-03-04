@@ -79,7 +79,7 @@ class ADXL345:
             calZ += self.getZ()
 
             gathered += 1
-            Timer.delay(time/samples)
+            wpilib.Timer.delay(time/samples)
         print("Done calibrating ADXL345")
         calX /= samples
         calY /= samples
@@ -144,11 +144,11 @@ class ADXL345:
         """
         data = self.i2c.read(self.kDataRegister + axis, 2)
         center = 0
-        if center is Axes.X:
+        if center is ADXL345.Axes.kX:
             center = self.centerX
-        if center is Axes.Y:
+        if center is ADXL345.Axes.kY:
             center = self.centerY
-        if center is Axes.Z:
+        if center is ADXL345.Axes.kZ:
             center = self.centerZ
         
         # Sensor is little endian... swap bytes
