@@ -1,6 +1,22 @@
 import wpilib
 import wpilib.interfaces
 
+def signed_short(val):
+    """
+    Convert 16 bits in little endian number form into a signed short
+
+    Actually, scratch that. I don't know what it does, but it works.
+    :param val: a 16-bit unsigned integer
+    :return: The signed short from -(2**15) to 2**15 - 1
+    """
+    val &= 0xFFFF  # Truncate to 16 bits
+    sig = -1 if val >> 15 == 1 else 1  # Get sign from MSB
+    u_short = (val & 0x7FFF)  # Drop MSB
+
+    if sig == 1:
+        u_short = 2**15 - u_short
+
+    return (sig * u_short) ^ 0x7FFF
 
 class ADXL345:
     """
@@ -152,7 +168,7 @@ class ADXL345:
             center = self.centerZ
         
         # Sensor is little endian... swap bytes
-        rawAccel = (data[1] << 8) | data[0]
+        rawAccel = signed_short((data[1] << 8) | data[0])
         return rawAccel * self.kGsPerLSB - center
 
     def getAccelerations(self):
@@ -166,7 +182,7 @@ class ADXL345:
         # Sensor is little endian... swap bytes
         rawData = []
         for i in range(3):
-            rawData.append((data[i*2+1] << 8) | data[i*2])
+            rawData.append(signed_short((data[i*2+1] << 8) | data[i*2]))
 
         return (rawData[0] * self.kGsPerLSB - self.centerX,
                 rawData[1] * self.kGsPerLSB - self.centerY,

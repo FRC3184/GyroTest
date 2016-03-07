@@ -71,15 +71,10 @@ GYRO_SENSITIVITY = 1/2 * 14.375 * 2**15 / 2000
 TEMP_SENSITIVITY = 280
 TEMP_OFFSET = -13200
 
-# Experimentally derived calibration values
-GYRO_X_OFFSET = 0
-GYRO_Y_OFFSET = 0
-GYRO_Z_OFFSET = 0
-
 
 def signed_short(val):
     """
-    Convert 16 bits in number form into a signed short
+    Convert 16 bits in little endian number form into a signed short
 
     Actually, scratch that. I don't know what it does, but it works.
     :param val: a 16-bit unsigned integer
@@ -324,14 +319,14 @@ class ITG3200(PIDSource):
         self.writeBit(RA_INT_CFG, INTCFG_RAW_RDY_EN_BIT, enabled)
 
     def getRateX(self):
-        return (((self.readShortFromRegister(RA_GYRO_XOUT_H, 2)) + GYRO_X_OFFSET) /
+        return ((self.readShortFromRegister(RA_GYRO_XOUT_H, 2)) /
                 GYRO_SENSITIVITY) - self.centerX
 
     def getRateY(self):
-        return (((self.readShortFromRegister(RA_GYRO_YOUT_H, 2))+GYRO_Y_OFFSET)/GYRO_SENSITIVITY) - self.centerY
+        return ((self.readShortFromRegister(RA_GYRO_YOUT_H, 2))/GYRO_SENSITIVITY) - self.centerY
 
     def getRateZ(self):
-        return (((self.readShortFromRegister(RA_GYRO_ZOUT_H, 2)) + GYRO_Z_OFFSET) /
+        return ((self.readShortFromRegister(RA_GYRO_ZOUT_H, 2)) /
                 GYRO_SENSITIVITY) - self.centerZ
         
     def getTemperature(self):
